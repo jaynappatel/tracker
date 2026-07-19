@@ -5,8 +5,8 @@ import { supabase } from '@/lib/supabaseClient';
 import { useUser } from '@/context/AuthContext';
 import { useSelectedDate } from '@/lib/useSelectedDate';
 import { parseDate } from '@/lib/dateHelpers';
-import { DEFAULT_GOALS, DEFAULT_ROTATION, Exercise, Goals, WORKOUT_TYPES } from '@/lib/types';
-import { ProgressBar } from '@/components/Widgets';
+import { DEFAULT_GOALS, DEFAULT_ROTATION, Exercise, Goals, WORKOUT_TYPES, WeeklyPlanExercise } from '@/lib/types';
+import { ProgressBar, WorkoutSuggestion } from '@/components/Widgets';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -19,6 +19,7 @@ export default function MovementPage() {
   const [workoutType, setWorkoutType] = useState('Rest');
   const [done, setDone] = useState(false);
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [planExercises, setPlanExercises] = useState<WeeklyPlanExercise[]>([]);
   const [exName, setExName] = useState('');
   const [exSets, setExSets] = useState('');
   const [exReps, setExReps] = useState('');
@@ -33,11 +34,12 @@ export default function MovementPage() {
     async function load() {
       setLoading(true);
       const uid = user!.id;
-      const [goalsRes, stepsRes, rotationRes, workoutRes] = await Promise.all([
+      const [goalsRes, stepsRes, rotationRes, workoutRes, planExRes] = await Promise.all([
         supabase.from('goals').select('*').eq('user_id', uid).maybeSingle(),
         supabase.from('steps').select('count').eq('user_id', uid).eq('date', date).maybeSingle(),
         supabase.from('rotation').select('days').eq('user_id', uid).maybeSingle(),
         supabase.from('workout_logs').select('*').eq('user_id', uid).eq('date', date).maybeSingle(),
+        supabase.from('weekly_plan_exercises').select('*').eq('user_id', uid).order('created_at'),
       ]);
       if (!active) return;
       if (goalsRes.data) setGoals(goalsRes.data as Goals);
@@ -48,6 +50,7 @@ export default function MovementPage() {
       setWorkoutType(wo?.type || days[weekday] || 'Rest');
       setDone(!!wo?.done);
       setExercises(wo?.exercises || []);
+      setPlanExercises((planExRes.data as WeeklyPlanExercise[]) || []);
       setLoading(false);
     }
     load();
@@ -129,8 +132,13 @@ export default function MovementPage() {
       </div>
 
       <div className="card">
-        <h3>Today's workout — {workoutType}</h3>
-        <div className="toggle-row">
+        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 8 }}>
+          <h3 style={{ marginBottom: 0 }}>Today's workout</h3>
+          <span className={`type-chip ${workoutType === 'Rest' ? 'gold' : ''}`}>{workoutType}</span>
+        </div>
+        {workoutType !== 'Rest' && <div className="sub">This week&apos;s options for {workoutType} days, from your Plan.</div>}
+        <WorkoutSuggestion type={workoutType} exercises={planExercises} />
+        <div className="toggle-row" style={{ marginTop: 14 }}>
           <div><div className="name">Mark today's workout as done</div></div>
           <label className="switch"><input type="checkbox" checked={done} onChange={(e) => toggleDone(e.target.checked)} /><span className="track" /></label>
         </div>

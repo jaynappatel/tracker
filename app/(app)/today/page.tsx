@@ -5,8 +5,8 @@ import { supabase } from '@/lib/supabaseClient';
 import { useUser } from '@/context/AuthContext';
 import { useSelectedDate } from '@/lib/useSelectedDate';
 import { parseDate } from '@/lib/dateHelpers';
-import { DEFAULT_GOALS, DEFAULT_ROTATION, Goals, Meal, sumMeals, pct } from '@/lib/types';
-import { Stamp, ProgressBar } from '@/components/Widgets';
+import { DEFAULT_GOALS, DEFAULT_ROTATION, Goals, Meal, WeeklyPlanExercise, sumMeals, pct } from '@/lib/types';
+import { Stamp, ProgressBar, WorkoutSuggestion } from '@/components/Widgets';
 import Link from 'next/link';
 
 export default function TodayPage() {
@@ -21,6 +21,7 @@ export default function TodayPage() {
   const [sleepLogged, setSleepLogged] = useState(false);
   const [healthLogged, setHealthLogged] = useState(false);
   const [todaysType, setTodaysType] = useState('Rest');
+  const [planExercises, setPlanExercises] = useState<WeeklyPlanExercise[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -28,7 +29,7 @@ export default function TodayPage() {
     async function load() {
       setLoading(true);
       const uid = user!.id;
-      const [goalsRes, mealsRes, waterRes, stepsRes, workoutRes, sleepRes, healthRes, rotationRes] = await Promise.all([
+      const [goalsRes, mealsRes, waterRes, stepsRes, workoutRes, sleepRes, healthRes, rotationRes, planExRes] = await Promise.all([
         supabase.from('goals').select('*').eq('user_id', uid).maybeSingle(),
         supabase.from('meals').select('*').eq('user_id', uid).eq('date', date),
         supabase.from('water_entries').select('oz').eq('user_id', uid).eq('date', date),
@@ -37,6 +38,7 @@ export default function TodayPage() {
         supabase.from('sleep_logs').select('hours').eq('user_id', uid).eq('date', date).maybeSingle(),
         supabase.from('health_logs').select('*').eq('user_id', uid).eq('date', date).maybeSingle(),
         supabase.from('rotation').select('days').eq('user_id', uid).maybeSingle(),
+        supabase.from('weekly_plan_exercises').select('*').eq('user_id', uid).order('created_at'),
       ]);
       if (!active) return;
       if (goalsRes.data) setGoals(goalsRes.data as Goals);
@@ -49,6 +51,7 @@ export default function TodayPage() {
       setHealthLogged(!!h && (h.glp1 || h.birth_control || h.period || h.sex));
       const rotation = (rotationRes.data?.days as string[]) || DEFAULT_ROTATION;
       setTodaysType(rotation[parseDate(date).getDay()] || 'Rest');
+      setPlanExercises((planExRes.data as WeeklyPlanExercise[]) || []);
       setLoading(false);
     }
     load();
@@ -99,12 +102,18 @@ export default function TodayPage() {
       </div>
 
       <div className="card">
-        <h3>Today's workout</h3>
-        <p style={{ margin: '0 0 10px', fontSize: 14 }}>
-          {todaysType}
-          {workoutDone && <span style={{ color: 'var(--teal)', fontWeight: 600 }}> — logged ✓</span>}
-        </p>
-        <Link href={`/movement?date=${date}`} className="btn btn-ghost btn-sm">Go log it &rarr;</Link>
+        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 8 }}>
+          <h3 style={{ marginBottom: 0 }}>Today&apos;s workout</h3>
+          <span className={`type-chip ${todaysType === 'Rest' ? 'gold' : ''}`}>
+            {todaysType}{workoutDone ? ' · done ✓' : ''}
+          </span>
+        </div>
+        <WorkoutSuggestion type={todaysType} exercises={planExercises} />
+        {todaysType !== 'Rest' && (
+          <Link href={`/movement?date=${date}`} className="btn btn-ghost btn-sm" style={{ marginTop: 12 }}>
+            Go log it &rarr;
+          </Link>
+        )}
       </div>
     </>
   );
