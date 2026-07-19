@@ -158,6 +158,25 @@ create table if not exists weekly_plan_exercises (
 );
 create index if not exists weekly_plan_exercises_user_idx on weekly_plan_exercises (user_id, workout_type);
 
+-- ---------- journal (freeform diary notes, several per day allowed) ----------
+create table if not exists journal_entries (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid not null,
+  date date not null,
+  body text not null,
+  created_at timestamptz default now()
+);
+create index if not exists journal_user_date_idx on journal_entries (user_id, date);
+
+-- ---------- profile (height, avatar, background settings) ----------
+create table if not exists profile (
+  user_id uuid primary key,
+  height_in numeric,
+  avatar_path text,
+  bg_carousel boolean default false,
+  updated_at timestamptz default now()
+);
+
 -- ================= ROW LEVEL SECURITY: OPEN =================
 -- RLS stays enabled but every policy allows everything to everyone.
 -- This is deliberate (no-login personal app) and means the anon key grants
@@ -176,6 +195,8 @@ alter table health_logs enable row level security;
 alter table weekly_recipes enable row level security;
 alter table weekly_plan_meals enable row level security;
 alter table weekly_plan_exercises enable row level security;
+alter table journal_entries enable row level security;
+alter table profile enable row level security;
 
 drop policy if exists "own rows only" on goals;
 drop policy if exists "own rows only" on meals;
@@ -204,3 +225,5 @@ create policy "open access" on health_logs for all using (true) with check (true
 create policy "open access" on weekly_recipes for all using (true) with check (true);
 create policy "open access" on weekly_plan_meals for all using (true) with check (true);
 create policy "open access" on weekly_plan_exercises for all using (true) with check (true);
+create policy "open access" on journal_entries for all using (true) with check (true);
+create policy "open access" on profile for all using (true) with check (true);

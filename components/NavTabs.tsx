@@ -12,6 +12,8 @@ const TABS = [
   { href: '/schedule', label: 'Schedule' },
   { href: '/sleep', label: 'Sleep' },
   { href: '/health', label: 'Health' },
+  { href: '/journal', label: 'Journal' },
+  { href: '/draw', label: 'Draw' },
   { href: '/summary', label: 'Weekly' },
   { href: '/goals', label: 'Goals' },
 ];

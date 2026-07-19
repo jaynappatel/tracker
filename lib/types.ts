@@ -97,6 +97,25 @@ export interface WeeklyPlanExercise {
   video_url: string;
 }
 
+export interface JournalEntry {
+  id?: string;
+  date: string;
+  body: string;
+  created_at?: string;
+}
+
+export interface Profile {
+  height_in: number | null;
+  avatar_path: string | null;
+  bg_carousel: boolean;
+}
+
+export const DEFAULT_PROFILE: Profile = {
+  height_in: null,
+  avatar_path: null,
+  bg_carousel: false,
+};
+
 export const MEAL_SLOTS = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 export const DAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
