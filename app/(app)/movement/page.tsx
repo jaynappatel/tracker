@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useUser } from '@/context/AuthContext';
+import { SINGLE_USER_ID } from '@/lib/singleUser';
 import { useSelectedDate } from '@/lib/useSelectedDate';
 import { parseDate } from '@/lib/dateHelpers';
 import { DEFAULT_GOALS, DEFAULT_ROTATION, Exercise, Goals, WORKOUT_TYPES, WeeklyPlanExercise } from '@/lib/types';
@@ -11,7 +11,6 @@ import { ProgressBar, WorkoutSuggestion } from '@/components/Widgets';
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function MovementPage() {
-  const user = useUser();
   const { date } = useSelectedDate();
   const [goals, setGoals] = useState<Goals>(DEFAULT_GOALS);
   const [steps, setSteps] = useState('');
@@ -29,11 +28,10 @@ export default function MovementPage() {
   const weekday = parseDate(date).getDay();
 
   useEffect(() => {
-    if (!user) return;
     let active = true;
     async function load() {
       setLoading(true);
-      const uid = user!.id;
+      const uid = SINGLE_USER_ID;
       const [goalsRes, stepsRes, rotationRes, workoutRes, planExRes] = await Promise.all([
         supabase.from('goals').select('*').eq('user_id', uid).maybeSingle(),
         supabase.from('steps').select('count').eq('user_id', uid).eq('date', date).maybeSingle(),
@@ -55,26 +53,23 @@ export default function MovementPage() {
     }
     load();
     return () => { active = false; };
-  }, [user, date]);
+  }, [date]);
 
   async function saveSteps() {
-    if (!user) return;
     const v = Number(steps);
-    await supabase.from('steps').upsert({ user_id: user.id, date, count: v });
+    await supabase.from('steps').upsert({ user_id: SINGLE_USER_ID, date, count: v });
   }
 
   async function updateRotationDay(dayIdx: number, value: string) {
-    if (!user) return;
     const next = [...rotation];
     next[dayIdx] = value;
     setRotation(next);
-    await supabase.from('rotation').upsert({ user_id: user.id, days: next });
+    await supabase.from('rotation').upsert({ user_id: SINGLE_USER_ID, days: next });
   }
 
   async function saveWorkoutLog(next: { done?: boolean; exercises?: Exercise[] }) {
-    if (!user) return;
     const payload = {
-      user_id: user.id,
+      user_id: SINGLE_USER_ID,
       date,
       type: workoutType,
       done: next.done ?? done,

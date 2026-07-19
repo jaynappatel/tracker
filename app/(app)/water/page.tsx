@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useUser } from '@/context/AuthContext';
+import { SINGLE_USER_ID } from '@/lib/singleUser';
 import { useSelectedDate } from '@/lib/useSelectedDate';
 import { DEFAULT_GOALS, Goals, WaterEntry } from '@/lib/types';
 import { ProgressBar } from '@/components/Widgets';
 
 export default function WaterPage() {
-  const user = useUser();
   const { date } = useSelectedDate();
   const [goals, setGoals] = useState<Goals>(DEFAULT_GOALS);
   const [entries, setEntries] = useState<WaterEntry[]>([]);
@@ -16,11 +15,10 @@ export default function WaterPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
     let active = true;
     async function load() {
       setLoading(true);
-      const uid = user!.id;
+      const uid = SINGLE_USER_ID;
       const [goalsRes, entriesRes] = await Promise.all([
         supabase.from('goals').select('*').eq('user_id', uid).maybeSingle(),
         supabase.from('water_entries').select('*').eq('user_id', uid).eq('date', date).order('logged_at', { ascending: false }),
@@ -32,11 +30,11 @@ export default function WaterPage() {
     }
     load();
     return () => { active = false; };
-  }, [user, date]);
+  }, [date]);
 
   async function addOz(amount: number) {
-    if (!user || amount <= 0) return;
-    const { data } = await supabase.from('water_entries').insert({ user_id: user.id, date, oz: amount }).select().single();
+    if (amount <= 0) return;
+    const { data } = await supabase.from('water_entries').insert({ user_id: SINGLE_USER_ID, date, oz: amount }).select().single();
     if (data) setEntries([data as WaterEntry, ...entries]);
   }
 

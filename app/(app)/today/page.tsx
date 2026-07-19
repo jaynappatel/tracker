@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useUser } from '@/context/AuthContext';
+import { SINGLE_USER_ID } from '@/lib/singleUser';
 import { useSelectedDate } from '@/lib/useSelectedDate';
 import { parseDate } from '@/lib/dateHelpers';
 import { DEFAULT_GOALS, DEFAULT_ROTATION, Goals, Meal, WeeklyPlanExercise, sumMeals, pct } from '@/lib/types';
@@ -10,7 +10,6 @@ import { Stamp, ProgressBar, WorkoutSuggestion } from '@/components/Widgets';
 import Link from 'next/link';
 
 export default function TodayPage() {
-  const user = useUser();
   const { date } = useSelectedDate();
   const [loading, setLoading] = useState(true);
   const [goals, setGoals] = useState<Goals>(DEFAULT_GOALS);
@@ -24,11 +23,10 @@ export default function TodayPage() {
   const [planExercises, setPlanExercises] = useState<WeeklyPlanExercise[]>([]);
 
   useEffect(() => {
-    if (!user) return;
     let active = true;
     async function load() {
       setLoading(true);
-      const uid = user!.id;
+      const uid = SINGLE_USER_ID;
       const [goalsRes, mealsRes, waterRes, stepsRes, workoutRes, sleepRes, healthRes, rotationRes, planExRes] = await Promise.all([
         supabase.from('goals').select('*').eq('user_id', uid).maybeSingle(),
         supabase.from('meals').select('*').eq('user_id', uid).eq('date', date),
@@ -56,7 +54,7 @@ export default function TodayPage() {
     }
     load();
     return () => { active = false; };
-  }, [user, date]);
+  }, [date]);
 
   if (loading) return <div className="empty-note">Loading…</div>;
 

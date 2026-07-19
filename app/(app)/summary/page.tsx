@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 import { supabase } from '@/lib/supabaseClient';
-import { useUser } from '@/context/AuthContext';
+import { SINGLE_USER_ID } from '@/lib/singleUser';
 import { useSelectedDate } from '@/lib/useSelectedDate';
 import { last7Days, weekdayName } from '@/lib/dateHelpers';
 import { DEFAULT_GOALS, Goals, Meal, sumMeals } from '@/lib/types';
@@ -19,18 +19,16 @@ interface DayRow {
 }
 
 export default function SummaryPage() {
-  const user = useUser();
   const { date } = useSelectedDate();
   const [goals, setGoals] = useState<Goals>(DEFAULT_GOALS);
   const [rows, setRows] = useState<DayRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
     let active = true;
     async function load() {
       setLoading(true);
-      const uid = user!.id;
+      const uid = SINGLE_USER_ID;
       const days = last7Days(date);
 
       const [goalsRes, mealsRes, waterRes, stepsRes, sleepRes, workoutRes] = await Promise.all([
@@ -72,7 +70,7 @@ export default function SummaryPage() {
     }
     load();
     return () => { active = false; };
-  }, [user, date]);
+  }, [date]);
 
   if (loading) return <div className="empty-note">Loading…</div>;
 

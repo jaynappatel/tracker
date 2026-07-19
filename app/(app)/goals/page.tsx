@@ -2,28 +2,26 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useUser } from '@/context/AuthContext';
+import { SINGLE_USER_ID } from '@/lib/singleUser';
 import { DEFAULT_GOALS, Goals } from '@/lib/types';
 
 export default function GoalsPage() {
-  const user = useUser();
   const [goals, setGoals] = useState<Goals>(DEFAULT_GOALS);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
     let active = true;
     async function load() {
       setLoading(true);
-      const { data } = await supabase.from('goals').select('*').eq('user_id', user!.id).maybeSingle();
+      const { data } = await supabase.from('goals').select('*').eq('user_id', SINGLE_USER_ID).maybeSingle();
       if (!active) return;
       if (data) setGoals(data as Goals);
       setLoading(false);
     }
     load();
     return () => { active = false; };
-  }, [user]);
+  }, []);
 
   function update<K extends keyof Goals>(key: K, value: Goals[K]) {
     setGoals({ ...goals, [key]: value });
@@ -31,8 +29,7 @@ export default function GoalsPage() {
   }
 
   async function save() {
-    if (!user) return;
-    await supabase.from('goals').upsert({ user_id: user.id, ...goals });
+    await supabase.from('goals').upsert({ user_id: SINGLE_USER_ID, ...goals });
     setSaved(true);
   }
 
@@ -63,7 +60,7 @@ export default function GoalsPage() {
         {saved && <span style={{ marginLeft: 10, fontSize: 12, color: 'var(--teal)' }}>Saved ✓</span>}
       </div>
       <div className="goal-note">
-        Everything you log here — meals, water, birth control, period, GLP-1, sex — is stored in your own Supabase database, protected by row-level security so only your signed-in account can read it. Nothing in this app talks to any outside service.
+        Heads up: this app has no login and no access restriction. Everything you log here — meals, water, birth control, period, GLP-1, sex — can be read and changed by anyone who has the app&apos;s URL (or the Supabase keys embedded in its code). Only use it if you&apos;re comfortable with that.
       </div>
     </>
   );

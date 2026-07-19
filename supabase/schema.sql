@@ -1,13 +1,17 @@
 -- Run this once in the Supabase SQL Editor (Project > SQL Editor > New query).
--- It creates one table per section of the app, all scoped to a single user
--- via row-level security, so even with the public anon key, nobody but the
--- signed-in owner can read or write these rows.
+-- It creates one table per section of the app.
+--
+-- !! NO ACCESS CONTROL !! There is no login and the RLS policies below allow
+-- everything. Anyone with the Supabase project URL and anon key (both shipped
+-- in the app's public JS bundle) can read and write every row here, including
+-- the health log. The user_id column remains only because the app keys rows
+-- by a fixed constant UUID (lib/singleUser.ts) — it protects nothing.
 
 create extension if not exists "pgcrypto";
 
 -- ---------- goals (one row per user) ----------
 create table if not exists goals (
-  user_id uuid references auth.users on delete cascade primary key,
+  user_id uuid primary key,
   calorie_goal int default 2000,
   protein_goal int default 150,
   carb_goal int default 200,
@@ -22,7 +26,7 @@ create table if not exists goals (
 -- ---------- meals (many rows per day) ----------
 create table if not exists meals (
   id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users on delete cascade not null,
+  user_id uuid not null,
   date date not null,
   name text not null,
   calories int default 0,
@@ -36,7 +40,7 @@ create index if not exists meals_user_date_idx on meals (user_id, date);
 -- ---------- water entries ----------
 create table if not exists water_entries (
   id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users on delete cascade not null,
+  user_id uuid not null,
   date date not null,
   oz int not null,
   logged_at timestamptz default now()
@@ -45,7 +49,7 @@ create index if not exists water_user_date_idx on water_entries (user_id, date);
 
 -- ---------- weight check-ins ----------
 create table if not exists weights (
-  user_id uuid references auth.users on delete cascade not null,
+  user_id uuid not null,
   date date not null,
   weight_lb numeric not null,
   primary key (user_id, date)
@@ -53,7 +57,7 @@ create table if not exists weights (
 
 -- ---------- steps ----------
 create table if not exists steps (
-  user_id uuid references auth.users on delete cascade not null,
+  user_id uuid not null,
   date date not null,
   count int not null,
   primary key (user_id, date)
@@ -61,13 +65,13 @@ create table if not exists steps (
 
 -- ---------- weekly workout rotation (one row per user) ----------
 create table if not exists rotation (
-  user_id uuid references auth.users on delete cascade primary key,
+  user_id uuid primary key,
   days jsonb not null default '["Rest","Push","Pull","Legs","Rest","Full Body","Cardio"]'
 );
 
 -- ---------- workout logs ----------
 create table if not exists workout_logs (
-  user_id uuid references auth.users on delete cascade not null,
+  user_id uuid not null,
   date date not null,
   type text,
   done boolean default false,
@@ -77,7 +81,7 @@ create table if not exists workout_logs (
 
 -- ---------- work schedule ----------
 create table if not exists schedule (
-  user_id uuid references auth.users on delete cascade not null,
+  user_id uuid not null,
   date date not null,
   work_start time,
   work_end time,
@@ -86,7 +90,7 @@ create table if not exists schedule (
 
 -- ---------- sleep ----------
 create table if not exists sleep_logs (
-  user_id uuid references auth.users on delete cascade not null,
+  user_id uuid not null,
   date date not null,
   hours numeric,
   quality text,
@@ -95,7 +99,7 @@ create table if not exists sleep_logs (
 
 -- ---------- health log: GLP-1, birth control, period, sex ----------
 create table if not exists health_logs (
-  user_id uuid references auth.users on delete cascade not null,
+  user_id uuid not null,
   date date not null,
   glp1 boolean default false,
   birth_control boolean default false,
@@ -110,7 +114,7 @@ create table if not exists health_logs (
 -- — nothing in the app regenerates them.
 create table if not exists weekly_recipes (
   id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users on delete cascade not null,
+  user_id uuid not null,
   week_start_date date,
   name text not null,
   ingredients text default '',
@@ -127,7 +131,7 @@ create index if not exists weekly_recipes_user_idx on weekly_recipes (user_id, w
 -- ---------- weekly plan: meals (what to eat, day by day) ----------
 create table if not exists weekly_plan_meals (
   id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users on delete cascade not null,
+  user_id uuid not null,
   week_start_date date,
   day_of_week int not null default 0, -- 0=Sun .. 6=Sat
   slot text default 'Dinner',         -- Breakfast / Lunch / Dinner / Snack
@@ -142,7 +146,7 @@ create index if not exists weekly_plan_meals_user_idx on weekly_plan_meals (user
 -- (YouTube / Instagram / anything).
 create table if not exists weekly_plan_exercises (
   id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users on delete cascade not null,
+  user_id uuid not null,
   week_start_date date,
   workout_type text not null default 'Full Body',
   name text not null,
@@ -154,10 +158,10 @@ create table if not exists weekly_plan_exercises (
 );
 create index if not exists weekly_plan_exercises_user_idx on weekly_plan_exercises (user_id, workout_type);
 
--- ================= ROW LEVEL SECURITY =================
--- Every table: enable RLS, then allow a user full access to rows where
--- user_id = their own auth id, and nothing else. This is what makes it
--- safe to put the anon key in client-side code.
+-- ================= ROW LEVEL SECURITY: OPEN =================
+-- RLS stays enabled but every policy allows everything to everyone.
+-- This is deliberate (no-login personal app) and means the anon key grants
+-- full read/write on all rows. There is no protection on this data.
 
 alter table goals enable row level security;
 alter table meals enable row level security;
@@ -173,16 +177,30 @@ alter table weekly_recipes enable row level security;
 alter table weekly_plan_meals enable row level security;
 alter table weekly_plan_exercises enable row level security;
 
-create policy "own rows only" on goals for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "own rows only" on meals for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "own rows only" on water_entries for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "own rows only" on weights for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "own rows only" on steps for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "own rows only" on rotation for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "own rows only" on workout_logs for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "own rows only" on schedule for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "own rows only" on sleep_logs for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "own rows only" on health_logs for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "own rows only" on weekly_recipes for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "own rows only" on weekly_plan_meals for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "own rows only" on weekly_plan_exercises for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "own rows only" on goals;
+drop policy if exists "own rows only" on meals;
+drop policy if exists "own rows only" on water_entries;
+drop policy if exists "own rows only" on weights;
+drop policy if exists "own rows only" on steps;
+drop policy if exists "own rows only" on rotation;
+drop policy if exists "own rows only" on workout_logs;
+drop policy if exists "own rows only" on schedule;
+drop policy if exists "own rows only" on sleep_logs;
+drop policy if exists "own rows only" on health_logs;
+drop policy if exists "own rows only" on weekly_recipes;
+drop policy if exists "own rows only" on weekly_plan_meals;
+drop policy if exists "own rows only" on weekly_plan_exercises;
+
+create policy "open access" on goals for all using (true) with check (true);
+create policy "open access" on meals for all using (true) with check (true);
+create policy "open access" on water_entries for all using (true) with check (true);
+create policy "open access" on weights for all using (true) with check (true);
+create policy "open access" on steps for all using (true) with check (true);
+create policy "open access" on rotation for all using (true) with check (true);
+create policy "open access" on workout_logs for all using (true) with check (true);
+create policy "open access" on schedule for all using (true) with check (true);
+create policy "open access" on sleep_logs for all using (true) with check (true);
+create policy "open access" on health_logs for all using (true) with check (true);
+create policy "open access" on weekly_recipes for all using (true) with check (true);
+create policy "open access" on weekly_plan_meals for all using (true) with check (true);
+create policy "open access" on weekly_plan_exercises for all using (true) with check (true);

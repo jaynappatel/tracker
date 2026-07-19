@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useUser } from '@/context/AuthContext';
+import { SINGLE_USER_ID } from '@/lib/singleUser';
 import { useSelectedDate } from '@/lib/useSelectedDate';
 import { niceDate } from '@/lib/dateHelpers';
 import { DEFAULT_GOALS, Goals } from '@/lib/types';
@@ -10,7 +10,6 @@ import { DEFAULT_GOALS, Goals } from '@/lib/types';
 const QUALITIES = ['Poor', 'Fair', 'Good', 'Great'];
 
 export default function SleepPage() {
-  const user = useUser();
   const { date } = useSelectedDate();
   const [goals, setGoals] = useState<Goals>(DEFAULT_GOALS);
   const [hours, setHours] = useState('');
@@ -18,11 +17,10 @@ export default function SleepPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
     let active = true;
     async function load() {
       setLoading(true);
-      const uid = user!.id;
+      const uid = SINGLE_USER_ID;
       const [goalsRes, sleepRes] = await Promise.all([
         supabase.from('goals').select('*').eq('user_id', uid).maybeSingle(),
         supabase.from('sleep_logs').select('*').eq('user_id', uid).eq('date', date).maybeSingle(),
@@ -36,11 +34,11 @@ export default function SleepPage() {
     }
     load();
     return () => { active = false; };
-  }, [user, date]);
+  }, [date]);
 
   async function save() {
-    if (!user || !hours) return;
-    await supabase.from('sleep_logs').upsert({ user_id: user.id, date, hours: Number(hours), quality });
+    if (!hours) return;
+    await supabase.from('sleep_logs').upsert({ user_id: SINGLE_USER_ID, date, hours: Number(hours), quality });
   }
 
   if (loading) return <div className="empty-note">Loading…</div>;

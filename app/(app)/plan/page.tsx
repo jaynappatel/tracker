@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useUser } from '@/context/AuthContext';
+import { SINGLE_USER_ID } from '@/lib/singleUser';
 import { fmtDate, weekStartOf } from '@/lib/dateHelpers';
 import {
   DAY_NAMES_SHORT,
@@ -28,7 +28,6 @@ const EMPTY_EXERCISE: WeeklyPlanExercise = {
 };
 
 export default function PlanPage() {
-  const user = useUser();
   const [loading, setLoading] = useState(true);
   const [rotation, setRotation] = useState<string[]>(DEFAULT_ROTATION);
   const [recipes, setRecipes] = useState<WeeklyRecipe[]>([]);
@@ -52,11 +51,10 @@ export default function PlanPage() {
   const weekStart = weekStartOf(fmtDate(new Date()));
 
   useEffect(() => {
-    if (!user) return;
     let active = true;
     async function load() {
       setLoading(true);
-      const uid = user!.id;
+      const uid = SINGLE_USER_ID;
       const [rotationRes, recipesRes, mealsRes, exRes] = await Promise.all([
         supabase.from('rotation').select('days').eq('user_id', uid).maybeSingle(),
         supabase.from('weekly_recipes').select('*').eq('user_id', uid).order('created_at'),
@@ -72,15 +70,14 @@ export default function PlanPage() {
     }
     load();
     return () => { active = false; };
-  }, [user]);
+  }, []);
 
   // ----- rotation -----
   async function updateRotationDay(dayIdx: number, value: string) {
-    if (!user) return;
     const next = [...rotation];
     next[dayIdx] = value;
     setRotation(next);
-    await supabase.from('rotation').upsert({ user_id: user.id, days: next });
+    await supabase.from('rotation').upsert({ user_id: SINGLE_USER_ID, days: next });
   }
 
   // ----- recipes -----
@@ -91,9 +88,9 @@ export default function PlanPage() {
   }
 
   async function saveRecipe() {
-    if (!user || !recipeForm.name.trim()) return;
+    if (!recipeForm.name.trim()) return;
     const payload = {
-      user_id: user.id,
+      user_id: SINGLE_USER_ID,
       week_start_date: weekStart,
       name: recipeForm.name.trim(),
       ingredients: recipeForm.ingredients,
@@ -125,8 +122,8 @@ export default function PlanPage() {
 
   // ----- meal plan -----
   async function addMeal() {
-    if (!user || !mealDesc.trim()) return;
-    const payload = { user_id: user.id, week_start_date: weekStart, day_of_week: mealDay, slot: mealSlot, description: mealDesc.trim() };
+    if (!mealDesc.trim()) return;
+    const payload = { user_id: SINGLE_USER_ID, week_start_date: weekStart, day_of_week: mealDay, slot: mealSlot, description: mealDesc.trim() };
     const { data } = await supabase.from('weekly_plan_meals').insert(payload).select().single();
     if (data) {
       setMeals([...meals, data as WeeklyPlanMeal].sort((a, b) => a.day_of_week - b.day_of_week));
@@ -147,9 +144,9 @@ export default function PlanPage() {
   }
 
   async function saveExercise() {
-    if (!user || !exForm.name.trim()) return;
+    if (!exForm.name.trim()) return;
     const payload = {
-      user_id: user.id,
+      user_id: SINGLE_USER_ID,
       week_start_date: weekStart,
       workout_type: exForm.workout_type,
       name: exForm.name.trim(),

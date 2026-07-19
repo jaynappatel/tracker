@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useUser } from '@/context/AuthContext';
+import { SINGLE_USER_ID } from '@/lib/singleUser';
 import { useSelectedDate } from '@/lib/useSelectedDate';
 import { niceDate, parseDate } from '@/lib/dateHelpers';
 import BodySilhouette from '@/components/BodySilhouette';
@@ -41,7 +41,6 @@ function weightTrend(weights: WeightRow[]) {
 }
 
 export default function HealthPage() {
-  const user = useUser();
   const { date } = useSelectedDate();
   const [health, setHealth] = useState<HealthState>(DEFAULT_HEALTH);
   const [weights, setWeights] = useState<WeightRow[]>([]);
@@ -50,11 +49,10 @@ export default function HealthPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
     let active = true;
     async function load() {
       setLoading(true);
-      const uid = user!.id;
+      const uid = SINGLE_USER_ID;
       const [healthRes, weightsRes] = await Promise.all([
         supabase.from('health_logs').select('*').eq('user_id', uid).eq('date', date).maybeSingle(),
         supabase.from('weights').select('date, weight_lb').eq('user_id', uid).order('date').limit(120),
@@ -69,20 +67,19 @@ export default function HealthPage() {
     }
     load();
     return () => { active = false; };
-  }, [user, date]);
+  }, [date]);
 
   async function toggle(key: keyof HealthState, value: boolean) {
-    if (!user) return;
     const next = { ...health, [key]: value };
     setHealth(next);
-    await supabase.from('health_logs').upsert({ user_id: user.id, date, ...next });
+    await supabase.from('health_logs').upsert({ user_id: SINGLE_USER_ID, date, ...next });
   }
 
   async function saveWeight() {
-    if (!user || !weightInput) return;
+    if (!weightInput) return;
     const weight_lb = Number(weightInput);
     if (!weight_lb) return;
-    await supabase.from('weights').upsert({ user_id: user.id, date, weight_lb });
+    await supabase.from('weights').upsert({ user_id: SINGLE_USER_ID, date, weight_lb });
     const next = weights.filter((w) => w.date !== date);
     next.push({ date, weight_lb });
     next.sort((a, b) => (a.date < b.date ? -1 : 1));

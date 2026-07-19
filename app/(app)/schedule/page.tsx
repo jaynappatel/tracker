@@ -2,23 +2,21 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useUser } from '@/context/AuthContext';
+import { SINGLE_USER_ID } from '@/lib/singleUser';
 import { useSelectedDate } from '@/lib/useSelectedDate';
 import { niceDate, to12h } from '@/lib/dateHelpers';
 
 export default function SchedulePage() {
-  const user = useUser();
   const { date } = useSelectedDate();
   const [workStart, setWorkStart] = useState('');
   const [workEnd, setWorkEnd] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
     let active = true;
     async function load() {
       setLoading(true);
-      const { data } = await supabase.from('schedule').select('*').eq('user_id', user!.id).eq('date', date).maybeSingle();
+      const { data } = await supabase.from('schedule').select('*').eq('user_id', SINGLE_USER_ID).eq('date', date).maybeSingle();
       if (!active) return;
       setWorkStart(data ? (data as any).work_start?.slice(0, 5) || '' : '');
       setWorkEnd(data ? (data as any).work_end?.slice(0, 5) || '' : '');
@@ -26,11 +24,10 @@ export default function SchedulePage() {
     }
     load();
     return () => { active = false; };
-  }, [user, date]);
+  }, [date]);
 
   async function save() {
-    if (!user) return;
-    await supabase.from('schedule').upsert({ user_id: user.id, date, work_start: workStart || null, work_end: workEnd || null });
+    await supabase.from('schedule').upsert({ user_id: SINGLE_USER_ID, date, work_start: workStart || null, work_end: workEnd || null });
   }
 
   if (loading) return <div className="empty-note">Loading…</div>;

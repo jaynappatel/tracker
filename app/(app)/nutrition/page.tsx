@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useUser } from '@/context/AuthContext';
+import { SINGLE_USER_ID } from '@/lib/singleUser';
 import { useSelectedDate } from '@/lib/useSelectedDate';
 import { DEFAULT_GOALS, Goals, Meal, sumMeals } from '@/lib/types';
 
 export default function NutritionPage() {
-  const user = useUser();
   const { date } = useSelectedDate();
   const [goals, setGoals] = useState<Goals>(DEFAULT_GOALS);
   const [meals, setMeals] = useState<Meal[]>([]);
@@ -20,11 +19,10 @@ export default function NutritionPage() {
   const [mealFat, setMealFat] = useState('');
 
   useEffect(() => {
-    if (!user) return;
     let active = true;
     async function load() {
       setLoading(true);
-      const uid = user!.id;
+      const uid = SINGLE_USER_ID;
       const [goalsRes, mealsRes] = await Promise.all([
         supabase.from('goals').select('*').eq('user_id', uid).maybeSingle(),
         supabase.from('meals').select('*').eq('user_id', uid).eq('date', date).order('created_at'),
@@ -36,12 +34,12 @@ export default function NutritionPage() {
     }
     load();
     return () => { active = false; };
-  }, [user, date]);
+  }, [date]);
 
   async function addMeal() {
-    if (!mealName.trim() || !user) return;
+    if (!mealName.trim()) return;
     const entry = {
-      user_id: user.id,
+      user_id: SINGLE_USER_ID,
       date,
       name: mealName.trim(),
       calories: Number(mealCal) || 0,
