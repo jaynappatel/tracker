@@ -19,23 +19,19 @@ export default function NutritionPage() {
   const [mealCarbs, setMealCarbs] = useState('');
   const [mealFat, setMealFat] = useState('');
 
-  const [weight, setWeight] = useState('');
-
   useEffect(() => {
     if (!user) return;
     let active = true;
     async function load() {
       setLoading(true);
       const uid = user!.id;
-      const [goalsRes, mealsRes, weightRes] = await Promise.all([
+      const [goalsRes, mealsRes] = await Promise.all([
         supabase.from('goals').select('*').eq('user_id', uid).maybeSingle(),
         supabase.from('meals').select('*').eq('user_id', uid).eq('date', date).order('created_at'),
-        supabase.from('weights').select('weight_lb').eq('user_id', uid).eq('date', date).maybeSingle(),
       ]);
       if (!active) return;
       if (goalsRes.data) setGoals(goalsRes.data as Goals);
       setMeals((mealsRes.data as Meal[]) || []);
-      setWeight(weightRes.data ? String((weightRes.data as any).weight_lb) : '');
       setLoading(false);
     }
     load();
@@ -61,11 +57,6 @@ export default function NutritionPage() {
   async function deleteMeal(id: string | undefined, idx: number) {
     if (id) await supabase.from('meals').delete().eq('id', id);
     setMeals(meals.filter((_, i) => i !== idx));
-  }
-
-  async function saveWeight() {
-    if (!weight || !user) return;
-    await supabase.from('weights').upsert({ user_id: user.id, date, weight_lb: Number(weight) });
   }
 
   if (loading) return <div className="empty-note">Loading…</div>;
@@ -110,13 +101,6 @@ export default function NutritionPage() {
         </div>
       </div>
 
-      <div className="card">
-        <h3>Weight check-in</h3>
-        <div className="row">
-          <input type="number" placeholder="lbs" step="0.1" style={{ maxWidth: 120 }} value={weight} onChange={(e) => setWeight(e.target.value)} />
-          <button className="btn btn-ghost" onClick={saveWeight}>Save</button>
-        </div>
-      </div>
     </>
   );
 }
