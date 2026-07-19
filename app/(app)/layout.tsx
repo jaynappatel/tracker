@@ -4,10 +4,12 @@ import { Suspense } from 'react';
 import NavTabs from '@/components/NavTabs';
 import DateNav from '@/components/DateNav';
 import HeaderBanner from '@/components/HeaderBanner';
+import BackgroundCarousel from '@/components/BackgroundCarousel';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div id="app">
+        <BackgroundCarousel />
         <HeaderBanner title="Jayna's Life" tagline="a running record — food, movement, body, cycle" />
         <Suspense fallback={null}>
           <DateNav />

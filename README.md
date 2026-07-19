@@ -11,10 +11,11 @@ A personal food, movement, body, and cycle tracker (formerly "Ledger"). Next.js 
 
 ## What's in here
 
-- `app/` — every page: today, nutrition, water, movement, plan, schedule, sleep, health, weekly summary, goals
+- `app/` — every page: today, nutrition, water, movement, plan, schedule, sleep, health, journal, draw, weekly summary, goals
 - `supabase/schema.sql` — the database schema, run once in Supabase (fresh installs)
 - `supabase/open_access_migration.sql` — one-time migration for a database created under the old auth-based schema
-- `lib/`, `components/` — shared code (Supabase client, date helpers, nav)
+- `supabase/new_features_migration.sql` — one-time migration adding the journal & profile tables and the public `gallery` storage bucket (July 2026 features)
+- `lib/`, `components/` — shared code (Supabase client, date helpers, gallery/storage helpers, nav)
 
 ## One-time setup
 
@@ -25,6 +26,8 @@ A personal food, movement, body, and cycle tracker (formerly "Ledger"). Next.js 
 3. In Project Settings > API, copy the **Project URL** and the **anon public key**.
 
 No Supabase Auth setup is needed — the app doesn't sign in to anything.
+
+For the Draw tab's gallery, the database also needs the **public `gallery` storage bucket** — `supabase/new_features_migration.sql` creates it (plus the journal/profile tables) if your project predates those features; fresh installs get the tables from `schema.sql` but still need the bucket section of that migration file (storage buckets aren't part of the schema file).
 
 ### 2. Local development
 
