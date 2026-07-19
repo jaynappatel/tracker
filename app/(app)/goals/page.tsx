@@ -63,7 +63,7 @@ export default function GoalsPage() {
         {saved && <span style={{ marginLeft: 10, fontSize: 12, color: 'var(--teal)' }}>Saved ✓</span>}
       </div>
       <div className="goal-note">
-        Everything you log here — meals, water, birth control, period, GLP-1, sex — is stored in your own Supabase database, protected by row-level security so only your signed-in account can read it. The recipe generator is the only feature that talks to an outside service, and it only ever sends your grocery list text.
+        Everything you log here — meals, water, birth control, period, GLP-1, sex — is stored in your own Supabase database, protected by row-level security so only your signed-in account can read it. Nothing in this app talks to any outside service.
       </div>
     </>
   );

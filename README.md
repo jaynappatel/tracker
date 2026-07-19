@@ -4,7 +4,7 @@ A personal food, movement, body, and cycle tracker. Next.js + Supabase, deployed
 
 ## What's in here
 
-- `app/` — every page: today, nutrition, water, movement, schedule, sleep, health, weekly summary, goals
+- `app/` — every page: today, nutrition, water, movement, plan, schedule, sleep, health, weekly summary, goals
 - `supabase/schema.sql` — the database schema, run once in Supabase
 - `lib/`, `components/`, `context/` — shared code (Supabase client, date helpers, auth, nav)
 
@@ -50,6 +50,8 @@ Once it's live on its Vercel URL, open that URL in your phone's browser and use 
 
 ## Notes
 
+- **Schema update (July 2026):** the weekly plan added three tables (`weekly_recipes`, `weekly_plan_meals`, `weekly_plan_exercises`). If your Supabase project was set up before this, re-run `supabase/schema.sql` in the SQL Editor — every statement is `create table if not exists`, so it's safe to run on top of existing data. If it complains that the `"own rows only"` policies already exist, that's fine: only the three new tables need theirs, and you can run just the `create policy` lines for those.
+- The Plan tab is where the week's recipes, meal plan, and workout options live. It's all hand-entered (e.g. written with Claude in a separate chat and pasted in) — the app never generates or regenerates anything. Today and Movement surface the day's workout type and its planned exercise options, including any pasted video links.
 - All your data — meals, water, weight, steps, workouts, schedule, sleep, and the health log (GLP-1, birth control, period, sex) — lives in your Supabase database, scoped to your account by row-level security. Nobody but your account can read it, even with the public anon key.
 - Auth: this is a single-user app, so there's no login screen. The app signs in automatically with one account's credentials, stored in `NEXT_PUBLIC_APP_EMAIL` / `NEXT_PUBLIC_APP_PASSWORD`. Because these are client-side env vars, they end up in the shipped JS bundle — anyone who dug through your deployed site's code could find them. That's an acceptable tradeoff for a personal tool only you'll ever visit, but don't reuse this password anywhere else.
 - Everything is manual entry — no third-party API calls, no other services involved.
