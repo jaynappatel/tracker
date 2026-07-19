@@ -98,11 +98,11 @@ export default function SummaryPage() {
         <h3>Calories, last 7 days</h3>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={chartData}>
-            <CartesianGrid stroke="#EAE6D8" vertical={false} />
-            <XAxis dataKey="day" tick={{ fill: '#5B6355', fontFamily: 'IBM Plex Mono', fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: '#5B6355', fontFamily: 'IBM Plex Mono', fontSize: 11 }} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={{ fontFamily: 'IBM Plex Mono', fontSize: 12, borderRadius: 8, borderColor: '#D9D4C2' }} />
-            <Bar dataKey="Calories" fill="#3E6B64" radius={[4, 4, 0, 0]} />
+            <CartesianGrid stroke="#F3E6ED" vertical={false} />
+            <XAxis dataKey="day" tick={{ fill: '#7A6875', fontFamily: 'Quicksand', fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: '#7A6875', fontFamily: 'Quicksand', fontSize: 11 }} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={{ fontFamily: 'Quicksand', fontSize: 12, borderRadius: 12, borderColor: '#EFDCE7' }} />
+            <Bar dataKey="Calories" fill="#8FB88A" radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

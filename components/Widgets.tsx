@@ -1,10 +1,21 @@
 import Link from 'next/link';
 import { WeeklyPlanExercise } from '@/lib/types';
+import { DoodleIcon, DoodleName } from '@/components/DoodleIcons';
+
+const ICON_BY_LABEL: Record<string, DoodleName> = {
+  meals: 'meals',
+  water: 'water',
+  steps: 'steps',
+  workout: 'workout',
+  sleep: 'sleep',
+  health: 'health',
+};
 
 export function Stamp({ label, done }: { label: string; done: boolean }) {
+  const icon = ICON_BY_LABEL[label.toLowerCase()];
   return (
     <div className={`stamp ${done ? 'done' : ''}`}>
-      <div className="ring">{done ? '✓' : ''}</div>
+      <div className="ring">{icon ? <DoodleIcon name={icon} /> : done ? '✓' : ''}</div>
       <div className="label">{label}</div>
     </div>
   );

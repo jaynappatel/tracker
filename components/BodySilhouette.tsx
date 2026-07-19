@@ -38,13 +38,13 @@ export default function BodySilhouette({ factor = 1 }: { factor?: number }) {
         cx={cx}
         cy="30"
         r="16"
-        fill="rgba(62,107,100,0.10)"
+        fill="rgba(143,184,138,0.16)"
         stroke="var(--teal)"
         strokeWidth="2"
       />
       <path
         d={body}
-        fill="rgba(62,107,100,0.10)"
+        fill="rgba(143,184,138,0.16)"
         stroke="var(--teal)"
         strokeWidth="2"
         strokeLinejoin="round"

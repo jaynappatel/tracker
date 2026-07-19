@@ -3,16 +3,12 @@
 import { Suspense } from 'react';
 import NavTabs from '@/components/NavTabs';
 import DateNav from '@/components/DateNav';
+import HeaderBanner from '@/components/HeaderBanner';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div id="app">
-        <header className="top">
-          <div>
-            <h1>Ledger</h1>
-            <div className="tagline">a running record — food, movement, body, cycle</div>
-          </div>
-        </header>
+        <HeaderBanner title="Ledger" tagline="a running record — food, movement, body, cycle" />
         <Suspense fallback={null}>
           <DateNav />
           <NavTabs />
