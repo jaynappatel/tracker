@@ -8,6 +8,7 @@ const TABS = [
   { href: '/nutrition', label: 'Nutrition' },
   { href: '/water', label: 'Water' },
   { href: '/movement', label: 'Movement' },
+  { href: '/plan', label: 'Plan' },
   { href: '/schedule', label: 'Schedule' },
   { href: '/sleep', label: 'Sleep' },
   { href: '/health', label: 'Health' },

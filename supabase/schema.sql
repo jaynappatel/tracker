@@ -104,6 +104,56 @@ create table if not exists health_logs (
   primary key (user_id, date)
 );
 
+-- ---------- weekly plan: recipes ----------
+-- Manually entered once a week (Jayna writes these herself, e.g. with Claude
+-- in a separate chat, then pastes them in). Rows persist until edited/deleted
+-- — nothing in the app regenerates them.
+create table if not exists weekly_recipes (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  week_start_date date,
+  name text not null,
+  ingredients text default '',
+  instructions text default '',
+  calories int default 0,
+  protein int default 0,
+  carbs int default 0,
+  fat int default 0,
+  servings int default 1,
+  created_at timestamptz default now()
+);
+create index if not exists weekly_recipes_user_idx on weekly_recipes (user_id, week_start_date);
+
+-- ---------- weekly plan: meals (what to eat, day by day) ----------
+create table if not exists weekly_plan_meals (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  week_start_date date,
+  day_of_week int not null default 0, -- 0=Sun .. 6=Sat
+  slot text default 'Dinner',         -- Breakfast / Lunch / Dinner / Snack
+  description text not null,
+  created_at timestamptz default now()
+);
+create index if not exists weekly_plan_meals_user_idx on weekly_plan_meals (user_id, week_start_date);
+
+-- ---------- weekly plan: exercises (options per workout type) ----------
+-- The Movement/Today pages surface the rows whose workout_type matches the
+-- rotation's type for that day. video_url is an optional pasted link
+-- (YouTube / Instagram / anything).
+create table if not exists weekly_plan_exercises (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  week_start_date date,
+  workout_type text not null default 'Full Body',
+  name text not null,
+  sets text default '',
+  reps text default '',
+  notes text default '',
+  video_url text default '',
+  created_at timestamptz default now()
+);
+create index if not exists weekly_plan_exercises_user_idx on weekly_plan_exercises (user_id, workout_type);
+
 -- ================= ROW LEVEL SECURITY =================
 -- Every table: enable RLS, then allow a user full access to rows where
 -- user_id = their own auth id, and nothing else. This is what makes it
@@ -119,6 +169,9 @@ alter table workout_logs enable row level security;
 alter table schedule enable row level security;
 alter table sleep_logs enable row level security;
 alter table health_logs enable row level security;
+alter table weekly_recipes enable row level security;
+alter table weekly_plan_meals enable row level security;
+alter table weekly_plan_exercises enable row level security;
 
 create policy "own rows only" on goals for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own rows only" on meals for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
@@ -130,3 +183,6 @@ create policy "own rows only" on workout_logs for all using (auth.uid() = user_i
 create policy "own rows only" on schedule for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own rows only" on sleep_logs for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own rows only" on health_logs for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own rows only" on weekly_recipes for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own rows only" on weekly_plan_meals for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own rows only" on weekly_plan_exercises for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

@@ -43,6 +43,13 @@ export function to12h(t: string): string {
   return `${h12}:${String(m).padStart(2, '0')} ${period}`;
 }
 
+export function weekStartOf(dateStr: string): string {
+  // Sunday of the week containing dateStr (rotation is Sun..Sat)
+  const d = parseDate(dateStr);
+  d.setDate(d.getDate() - d.getDay());
+  return fmtDate(d);
+}
+
 export function weekdayName(dateStr: string): string {
   return parseDate(dateStr).toLocaleDateString('en-US', { weekday: 'short' });
 }

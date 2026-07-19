@@ -42,6 +42,7 @@ export interface Exercise {
   sets: string;
   reps: string;
   weight: string;
+  video_url?: string;
 }
 
 export interface WorkoutLog {
@@ -61,6 +62,43 @@ export interface Recipe {
   ingredients: string[];
   instructions: string[];
 }
+
+// ---------- weekly plan (all manually entered, never auto-generated) ----------
+
+export interface WeeklyRecipe {
+  id?: string;
+  week_start_date?: string | null;
+  name: string;
+  ingredients: string;
+  instructions: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  servings: number;
+}
+
+export interface WeeklyPlanMeal {
+  id?: string;
+  week_start_date?: string | null;
+  day_of_week: number; // 0=Sun .. 6=Sat
+  slot: string;        // Breakfast / Lunch / Dinner / Snack
+  description: string;
+}
+
+export interface WeeklyPlanExercise {
+  id?: string;
+  week_start_date?: string | null;
+  workout_type: string;
+  name: string;
+  sets: string;
+  reps: string;
+  notes: string;
+  video_url: string;
+}
+
+export const MEAL_SLOTS = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+export const DAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export const WORKOUT_TYPES = ['Rest', 'Push', 'Pull', 'Legs', 'Full Body', 'Cardio', 'Active Recovery'];
 export const DEFAULT_ROTATION = ['Rest', 'Push', 'Pull', 'Legs', 'Rest', 'Full Body', 'Cardio']; // Sun..Sat
