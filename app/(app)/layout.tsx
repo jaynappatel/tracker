@@ -8,7 +8,7 @@ import HeaderBanner from '@/components/HeaderBanner';
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div id="app">
-        <HeaderBanner title="Ledger" tagline="a running record — food, movement, body, cycle" />
+        <HeaderBanner title="Jayna's Life" tagline="a running record — food, movement, body, cycle" />
         <Suspense fallback={null}>
           <DateNav />
           <NavTabs />

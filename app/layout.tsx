@@ -2,18 +2,18 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Ledger',
+  title: "Jayna's Life",
   description: 'A running record — food, movement, body, cycle.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Ledger',
+    title: "Jayna's Life",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#3E6B64',
+  themeColor: '#FBF3F6',
   width: 'device-width',
   initialScale: 1,
 };

@@ -1,6 +1,6 @@
-# Ledger
+# Jayna's Life
 
-A personal food, movement, body, and cycle tracker. Next.js + Supabase, deployed on Vercel.
+A personal food, movement, body, and cycle tracker (formerly "Ledger"). Next.js + Supabase, deployed on Vercel.
 
 > ⚠️ **This app has no authentication of any kind.** There is no login screen and no
 > access control. Anyone who obtains the deployed URL — or the Supabase project URL

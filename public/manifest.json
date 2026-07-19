@@ -1,11 +1,11 @@
 {
-  "name": "Ledger",
-  "short_name": "Ledger",
+  "name": "Jayna's Life",
+  "short_name": "Jayna's Life",
   "description": "A running record — food, movement, body, cycle.",
   "start_url": "/today",
   "display": "standalone",
-  "background_color": "#F5F3EC",
-  "theme_color": "#3E6B64",
+  "background_color": "#FBF3F6",
+  "theme_color": "#FBF3F6",
   "icons": [
     {
       "src": "/icon.svg",
