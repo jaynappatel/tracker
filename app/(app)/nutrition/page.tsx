@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useUser } from '@/context/AuthContext';
 import { useSelectedDate } from '@/lib/useSelectedDate';
-import { DEFAULT_GOALS, Goals, Meal, Recipe, sumMeals } from '@/lib/types';
+import { DEFAULT_GOALS, Goals, Meal, sumMeals } from '@/lib/types';
 
 export default function NutritionPage() {
   const user = useUser();
@@ -18,11 +18,6 @@ export default function NutritionPage() {
   const [mealProtein, setMealProtein] = useState('');
   const [mealCarbs, setMealCarbs] = useState('');
   const [mealFat, setMealFat] = useState('');
-
-  const [groceries, setGroceries] = useState('');
-  const [recipes, setRecipes] = useState<Recipe[] | null>(null);
-  const [genLoading, setGenLoading] = useState(false);
-  const [genError, setGenError] = useState<string | null>(null);
 
   const [weight, setWeight] = useState('');
 
@@ -73,61 +68,12 @@ export default function NutritionPage() {
     await supabase.from('weights').upsert({ user_id: user.id, date, weight_lb: Number(weight) });
   }
 
-  async function generateRecipes() {
-    if (!groceries.trim()) return;
-    setGenLoading(true);
-    setGenError(null);
-    setRecipes(null);
-    try {
-      const res = await fetch('/api/recipes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groceries }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setRecipes(data.recipes);
-    } catch (e: any) {
-      setGenError("Couldn't generate recipes right now. Try again in a moment.");
-    } finally {
-      setGenLoading(false);
-    }
-  }
-
-  async function addRecipeToLog(r: Recipe) {
-    if (!user) return;
-    const entry = { user_id: user.id, date, name: r.name, calories: r.calories, protein: r.protein, carbs: r.carbs, fat: r.fat };
-    const { data } = await supabase.from('meals').insert(entry).select().single();
-    if (data) setMeals([...meals, data as Meal]);
-  }
-
   if (loading) return <div className="empty-note">Loading…</div>;
 
   const totals = sumMeals(meals);
 
   return (
     <>
-      <div className="card">
-        <h3>Generate recipes from your groceries</h3>
-        <div className="sub">Paste what you bought — get recipe ideas with estimated calories & macros, ready to drop into today's log.</div>
-        <label className="field"><span>Groceries</span>
-          <textarea value={groceries} onChange={(e) => setGroceries(e.target.value)} placeholder="chicken breast, broccoli, brown rice, eggs, greek yogurt, spinach..." />
-        </label>
-        <button className="btn btn-teal" onClick={generateRecipes} disabled={genLoading}>
-          {genLoading ? <><span className="spinner" /> Thinking...</> : 'Generate recipes'}
-        </button>
-        {genError && <div className="empty-note">{genError}</div>}
-        {recipes && recipes.map((r, i) => (
-          <div className="recipe-card" key={i}>
-            <h4>{r.name}</h4>
-            <div className="macros-inline">{r.calories} cal · P{r.protein} C{r.carbs} F{r.fat} · serves {r.servings}</div>
-            <ul>{r.ingredients.map((ing, j) => <li key={j}>{ing}</li>)}</ul>
-            <ol>{r.instructions.map((step, j) => <li key={j}>{step}</li>)}</ol>
-            <button className="btn btn-teal btn-sm" onClick={() => addRecipeToLog(r)}>Add to today's log</button>
-          </div>
-        ))}
-      </div>
-
       <div className="card">
         <h3>Log a meal</h3>
         <div className="grid-2">

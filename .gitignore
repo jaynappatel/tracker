@@ -4,3 +4,6 @@ node_modules
 .env*.local
 .DS_Store
 *.log
+DELETE_ME_*
+_test_delete_me.txt
+*.tsbuildinfo
