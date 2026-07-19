@@ -3,20 +3,26 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { SINGLE_USER_ID } from '@/lib/singleUser';
-import { DEFAULT_GOALS, Goals } from '@/lib/types';
+import { DEFAULT_GOALS, DEFAULT_PROFILE, Goals, Profile } from '@/lib/types';
 
 export default function GoalsPage() {
   const [goals, setGoals] = useState<Goals>(DEFAULT_GOALS);
+  const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
 
   useEffect(() => {
     let active = true;
     async function load() {
       setLoading(true);
-      const { data } = await supabase.from('goals').select('*').eq('user_id', SINGLE_USER_ID).maybeSingle();
+      const [goalsRes, profileRes] = await Promise.all([
+        supabase.from('goals').select('*').eq('user_id', SINGLE_USER_ID).maybeSingle(),
+        supabase.from('profile').select('*').eq('user_id', SINGLE_USER_ID).maybeSingle(),
+      ]);
       if (!active) return;
-      if (data) setGoals(data as Goals);
+      if (goalsRes.data) setGoals(goalsRes.data as Goals);
+      if (profileRes.data) setProfile(profileRes.data as Profile);
       setLoading(false);
     }
     load();
@@ -31,6 +37,15 @@ export default function GoalsPage() {
   async function save() {
     await supabase.from('goals').upsert({ user_id: SINGLE_USER_ID, ...goals });
     setSaved(true);
+  }
+
+  async function saveProfile(next: Profile) {
+    setProfile(next);
+    setProfileSaved(false);
+    await supabase.from('profile').upsert({ user_id: SINGLE_USER_ID, ...next });
+    setProfileSaved(true);
+    // the background carousel (mounted in the layout) listens for this
+    window.dispatchEvent(new Event('profile-updated'));
   }
 
   if (loading) return <div className="empty-note">Loading…</div>;
@@ -59,6 +74,36 @@ export default function GoalsPage() {
         <button className="btn btn-teal" onClick={save}>Save goals</button>
         {saved && <span style={{ marginLeft: 10, fontSize: 12, color: 'var(--teal)' }}>Saved ✓</span>}
       </div>
+
+      <div className="card">
+        <h3>You &amp; your app</h3>
+        <label className="field" style={{ maxWidth: 220 }}><span>Height (inches)</span>
+          <input
+            type="number"
+            step="0.5"
+            placeholder={'e.g. 66 for 5′6″'}
+            value={profile.height_in ?? ''}
+            onChange={(e) => setProfile({ ...profile, height_in: e.target.value ? Number(e.target.value) : null })}
+            onBlur={() => saveProfile(profile)}
+          />
+        </label>
+        <div className="toggle-row">
+          <div>
+            <div className="name">Background carousel</div>
+            <div className="note">Softly fade your saved drawings &amp; photos behind the app. Needs at least one image in the gallery (Draw tab).</div>
+          </div>
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={profile.bg_carousel}
+              onChange={(e) => saveProfile({ ...profile, bg_carousel: e.target.checked })}
+            />
+            <span className="track" />
+          </label>
+        </div>
+        {profileSaved && <span style={{ fontSize: 12, color: 'var(--teal)' }}>Saved ✓</span>}
+      </div>
+
       <div className="goal-note">
         Heads up: this app has no login and no access restriction. Everything you log here — meals, water, birth control, period, GLP-1, sex — can be read and changed by anyone who has the app&apos;s URL (or the Supabase keys embedded in its code). Only use it if you&apos;re comfortable with that.
       </div>

@@ -6,6 +6,8 @@ import { SINGLE_USER_ID } from '@/lib/singleUser';
 import { useSelectedDate } from '@/lib/useSelectedDate';
 import { niceDate, parseDate } from '@/lib/dateHelpers';
 import BodySilhouette from '@/components/BodySilhouette';
+import { DEFAULT_PROFILE, Profile } from '@/lib/types';
+import { GalleryImage, galleryUrl, listGalleryImages } from '@/lib/gallery';
 
 interface HealthState {
   glp1: boolean;
@@ -46,6 +48,9 @@ export default function HealthPage() {
   const [weights, setWeights] = useState<WeightRow[]>([]);
   const [weightInput, setWeightInput] = useState('');
   const [weightSaved, setWeightSaved] = useState(false);
+  const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
+  const [picking, setPicking] = useState(false);
+  const [gallery, setGallery] = useState<GalleryImage[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,12 +58,14 @@ export default function HealthPage() {
     async function load() {
       setLoading(true);
       const uid = SINGLE_USER_ID;
-      const [healthRes, weightsRes] = await Promise.all([
+      const [healthRes, weightsRes, profileRes] = await Promise.all([
         supabase.from('health_logs').select('*').eq('user_id', uid).eq('date', date).maybeSingle(),
         supabase.from('weights').select('date, weight_lb').eq('user_id', uid).order('date').limit(120),
+        supabase.from('profile').select('*').eq('user_id', uid).maybeSingle(),
       ]);
       if (!active) return;
       setHealth(healthRes.data ? (healthRes.data as any) : DEFAULT_HEALTH);
+      if (profileRes.data) setProfile(profileRes.data as Profile);
       const rows = (weightsRes.data as WeightRow[]) || [];
       setWeights(rows);
       setWeightInput(String(rows.find((w) => w.date === date)?.weight_lb ?? ''));
@@ -85,6 +92,18 @@ export default function HealthPage() {
     next.sort((a, b) => (a.date < b.date ? -1 : 1));
     setWeights(next);
     setWeightSaved(true);
+  }
+
+  async function openPicker() {
+    setPicking(true);
+    if (gallery === null) setGallery(await listGalleryImages());
+  }
+
+  async function chooseAvatar(name: string | null) {
+    const next = { ...profile, avatar_path: name };
+    setProfile(next);
+    setPicking(false);
+    await supabase.from('profile').upsert({ user_id: SINGLE_USER_ID, ...next });
   }
 
   if (loading) return <div className="empty-note">Loading…</div>;
@@ -114,10 +133,25 @@ export default function HealthPage() {
         <h3>Body check-in</h3>
         <div className="sub">A daily weigh-in, just for the trend line — the figure shifts gently with it.</div>
         <div className="body-viz">
-          <BodySilhouette factor={trend?.factor ?? 1} />
+          {profile.avatar_path ? (
+            // custom avatar gets the same gentle trend response as the
+            // sketch figure: a few percent of horizontal scale
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              className="avatar-img"
+              src={galleryUrl(profile.avatar_path)}
+              alt="your avatar"
+              style={{ transform: `scale(${Math.min(1.08, Math.max(0.92, trend?.factor ?? 1))}, 1)` }}
+            />
+          ) : (
+            <BodySilhouette factor={trend?.factor ?? 1} />
+          )}
           <div className="body-copy">
             <div className="trend-num">{latestWeight != null ? `${latestWeight} lb` : '—'}</div>
             <div className="trend-note">{trendNote}</div>
+            {profile.height_in != null && (
+              <div className="trend-note">Height: {Math.floor(profile.height_in / 12)}&prime;{Math.round(profile.height_in % 12)}&Prime;</div>
+            )}
             {trendTag && <span className="trend-tag">{trendTag}</span>}
             <div className="row" style={{ marginTop: 14 }}>
               <input
@@ -131,8 +165,42 @@ export default function HealthPage() {
               <button className="btn btn-teal" onClick={saveWeight}>Save</button>
               {weightSaved && <span style={{ fontSize: 12, color: 'var(--teal)' }}>Saved ✓</span>}
             </div>
+            <div className="row" style={{ marginTop: 10 }}>
+              {!picking && (
+                <button className="btn btn-ghost btn-sm" onClick={openPicker}>
+                  {profile.avatar_path ? 'Change avatar' : 'Use one of your drawings as your avatar'}
+                </button>
+              )}
+              {profile.avatar_path && !picking && (
+                <button className="btn btn-ghost btn-sm" onClick={() => chooseAvatar(null)}>Back to the sketch figure</button>
+              )}
+            </div>
           </div>
         </div>
+        {picking && (
+          <div style={{ marginTop: 14 }}>
+            <div className="sub" style={{ margin: 0 }}>Pick from your gallery (draw more on the Draw tab):</div>
+            {gallery === null
+              ? <div className="empty-note">Loading gallery…</div>
+              : gallery.length === 0
+                ? <div className="empty-note">No saved drawings or photos yet — visit the Draw tab first.</div>
+                : (
+                  <div className="gallery-grid">
+                    {gallery.map((img) => (
+                      <button
+                        className={`gallery-item ${profile.avatar_path === img.name ? 'selected' : ''}`}
+                        key={img.name}
+                        onClick={() => chooseAvatar(img.name)}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={img.url} alt={img.name} loading="lazy" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+            <button className="btn btn-ghost btn-sm" style={{ marginTop: 10 }} onClick={() => setPicking(false)}>Close</button>
+          </div>
+        )}
       </div>
 
       <div className="card">
